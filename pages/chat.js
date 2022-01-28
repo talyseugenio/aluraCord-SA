@@ -1,10 +1,34 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js'
+import {useRouter} from "next/router"
+
+//AJAX: https://medium.com/@omariosouto/entendendo-como-fazer-ajax-com-a-fetchapi-977ff20da3c6#:~:text=Para%20conseguir%20pegar%20o%20dado,estamos%20fazendo%20para%20o%20servidor.
+
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzMyNzM5NSwiZXhwIjoxOTU4OTAzMzk1fQ.pzReI9hYvAphaUMLGBHlLsSBqZJwHqKWv2TWcrif42w"
+const SUPABASE_URL = "https://inyrjmcswlxxkhnqepew.supabase.co"
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 export default function ChatPage() {
     const [mensagem, setMensagem] = React.useState('');
+    //backend será esse vetor (variável)
     const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
+    const router = useRouter();
+    const { username } = router.query;
+    console.log(username)
+
+
+    React.useEffect(() => {
+        const dadoSupabase = supabaseClient
+            .from("mensagens")
+            .select("*")
+            .order("id", { ascending: false })
+            .then(({ data, error }) => {
+                console.log("Dados da consulta", data)
+                setListaDeMensagens(data)
+            })
+    }, [])
 
     /*
     // Usuário
@@ -19,15 +43,24 @@ export default function ChatPage() {
     */
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
-            id: listaDeMensagens.length + 1,
-            de: 'talyseugenio',
+            de: username,
             texto: novaMensagem,
         };
+        supabaseClient
+            .from("mensagens")
+            .insert([
+                //objeto com os mesmos campos do supabase
+                mensagem
+            ])
+            .then(({ data }) => {
+                // console.log("Criando Mensagem: ", resposta)
+                setListaDeMensagens([
+                    data[0],
+                    ...listaDeMensagens,
+                ]);
+            })
 
-        setListaDeMensagens([
-            mensagem,
-            ...listaDeMensagens,
-        ]);
+
         setMensagem('');
     }
 
@@ -124,14 +157,14 @@ export default function ChatPage() {
                             fullWidth
                             styleSheet={{
                                 maxWidth: '100px',
-                            } 
+                            }
                             }
                             buttonColors={{
                                 contrastColor: appConfig.theme.colors.neutrals["000"],
                                 mainColor: "#696969",
                                 mainColorStrong: "#363636",
                             }}
-                            
+
                         />
                     </Box>
                 </Box>
@@ -163,13 +196,15 @@ function MessageList(props) {
     return (
         <Box
             tag="ul"
+            placeholder = "Carregando..."
             styleSheet={{
-                overflow: 'scroll',
+                overflow: 'auto',
                 display: 'flex',
                 flexDirection: 'column-reverse',
                 flex: 1,
                 color: appConfig.theme.colors.neutrals["000"],
                 marginBottom: '16px',
+                
             }}
         >
             {props.mensagens.map((mensagem) => {
@@ -199,7 +234,7 @@ function MessageList(props) {
                                     display: 'inline-block',
                                     marginRight: '8px',
                                 }}
-                                src={`https://github.com/talyseugenio.png`}
+                            src={`https://github.com/${mensagem.de}.png`}
                             />
                             <Text tag="strong">
                                 {mensagem.de}

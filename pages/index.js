@@ -69,7 +69,7 @@ export default function PaginaInicial() {
             onSubmit={(event) =>{
               event.preventDefault()
               console.log("Alguem submeteu o form")
-              roteamento.push("/chat")
+              roteamento.push(`/chat?username=${username}`)
               //window.location.href = "/chat"
             }}
             styleSheet={{
@@ -124,6 +124,7 @@ export default function PaginaInicial() {
                 mainColorLight: "#363636",
                 mainColorStrong: "#363636",
               }}
+              
             />
           </Box>
           {/* Formulário */}
