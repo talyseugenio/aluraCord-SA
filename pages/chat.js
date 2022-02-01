@@ -2,7 +2,8 @@ import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
 import { createClient } from '@supabase/supabase-js'
-import {useRouter} from "next/router"
+import { useRouter } from 'next/router'
+import { ButtonSendSticker } from '../src/components/ButtonSendSticker'
 
 //AJAX: https://medium.com/@omariosouto/entendendo-como-fazer-ajax-com-a-fetchapi-977ff20da3c6#:~:text=Para%20conseguir%20pegar%20o%20dado,estamos%20fazendo%20para%20o%20servidor.
 
@@ -10,37 +11,61 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5v
 const SUPABASE_URL = "https://inyrjmcswlxxkhnqepew.supabase.co"
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+
+
+function escutaMensagemTempoReal(adicionaMensagem) {
+    return supabaseClient
+        .from('mensagens')
+        .on('INSERT', (respostaLive) => {
+            adicionaMensagem(respostaLive.new);
+        })
+        .subscribe();
+}
+
 export default function ChatPage() {
     const [mensagem, setMensagem] = React.useState('');
     //backend será esse vetor (variável)
-    const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
-    const router = useRouter();
-    const { username } = router.query;
-    console.log(username)
+    const [listaDeMensagens, setListaDeMensagens] = React.useState([
+        //    {
+        //        id:1,
+        //        de: 'talyseugenio',
+        //        texto: ':sticker: https://c.tenor.com/TKpmh4WFEsAAAAAC/alura-gaveta-filmes.gif', 
+        //    },
+        //    {
+        //     id:1,
+        //     de: 'peas',
+        //     texto: 'teste', 
+        // }
+    ]);
+    const roteamento = useRouter();
+    const { username } = roteamento.query;
+    // console.log(username)
 
 
     React.useEffect(() => {
-        const dadoSupabase = supabaseClient
+        supabaseClient
             .from("mensagens")
             .select("*")
             .order("id", { ascending: false })
-            .then(({ data, error }) => {
-                console.log("Dados da consulta", data)
+            .then(({ data }) => {
+                // console.log("Dados da consulta", data)
                 setListaDeMensagens(data)
-            })
+            });
+
+        escutaMensagemTempoReal((novaMensagem) => {
+
+            console.log(novaMensagem)
+
+
+            setListaDeMensagens((valorAtual) => {
+                return [
+                    novaMensagem,
+                    ...valorAtual,
+                ]
+            });
+        });
     }, [])
 
-    /*
-    // Usuário
-    - Usuário digita no campo textarea
-    - Aperta enter para enviar
-    - Tem que adicionar o texto na listagem
-    
-    // Dev
-    - [X] Campo criado
-    - [X] Vamos usar o onChange usa o useState (ter if pra caso seja enter pra limpar a variavel)
-    - [X] Lista de mensagens 
-    */
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
             de: username,
@@ -53,11 +78,7 @@ export default function ChatPage() {
                 mensagem
             ])
             .then(({ data }) => {
-                // console.log("Criando Mensagem: ", resposta)
-                setListaDeMensagens([
-                    data[0],
-                    ...listaDeMensagens,
-                ]);
+                console.log("Criando Mensagem: ", data)
             })
 
 
@@ -128,6 +149,8 @@ export default function ChatPage() {
                                 // console.log(mensagem)
                             }
                             }
+                            
+                            
                             //visualizar qual tecla foi utilizada
                             onKeyPress={(event) => {
                                 //visualizar tecla
@@ -145,27 +168,37 @@ export default function ChatPage() {
                                 border: '0',
                                 resize: 'none',
                                 borderRadius: '5px',
-                                padding: '6px 8px',
+                                padding: '5px 8px',
                                 backgroundColor: appConfig.theme.colors.neutrals[800],
                                 marginRight: '12px',
                                 color: appConfig.theme.colors.neutrals[200],
                             }}
                         />
+                        {/* Callback */}
+                        <ButtonSendSticker
+                            onStickerClick={(sticker) => {
+                                // console.log("[USANDO O COMPONENTE]Salva esse stiker no banco", sticker)
+                                handleNovaMensagem(':sticker:' + sticker)
+                            }}
+                        />
                         <Button
                             onClick={() => handleNovaMensagem(mensagem)}
                             label='Enviar'
+                            disabled = {TextField == ""}
                             fullWidth
                             styleSheet={{
                                 maxWidth: '100px',
+                                marginBottom:'9px'
                             }
                             }
                             buttonColors={{
                                 contrastColor: appConfig.theme.colors.neutrals["000"],
                                 mainColor: "#696969",
-                                mainColorStrong: "#363636",
+
                             }}
 
                         />
+                        
                     </Box>
                 </Box>
             </Box>
@@ -192,11 +225,11 @@ function Header() {
 }
 
 function MessageList(props) {
-    console.log(props);
+    // console.log(props);
     return (
         <Box
             tag="ul"
-            placeholder = "Carregando..."
+            placeholder="Carregando..."
             styleSheet={{
                 overflow: 'auto',
                 display: 'flex',
@@ -204,7 +237,6 @@ function MessageList(props) {
                 flex: 1,
                 color: appConfig.theme.colors.neutrals["000"],
                 marginBottom: '16px',
-                
             }}
         >
             {props.mensagens.map((mensagem) => {
@@ -234,7 +266,7 @@ function MessageList(props) {
                                     display: 'inline-block',
                                     marginRight: '8px',
                                 }}
-                            src={`https://github.com/${mensagem.de}.png`}
+                                src={`https://github.com/${mensagem.de}.png`}
                             />
                             <Text tag="strong">
                                 {mensagem.de}
@@ -250,7 +282,16 @@ function MessageList(props) {
                                 {(new Date().toLocaleDateString())}
                             </Text>
                         </Box>
-                        {mensagem.texto}
+                        {/* Declarativo */}
+                        {/* { mensagem.texto.startsWith("Sticker:").toString() } */}
+                        {mensagem.texto.startsWith(':sticker:')
+                            ? (
+                                <Image src={mensagem.texto.replace(':sticker:', '')} />
+                            )
+                            : (
+                                mensagem.texto
+                            )
+                        }
                     </Text>
                 );
             })}
