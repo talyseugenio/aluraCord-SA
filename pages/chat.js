@@ -67,22 +67,24 @@ export default function ChatPage() {
     }, [])
 
     function handleNovaMensagem(novaMensagem) {
-        const mensagem = {
-            de: username,
-            texto: novaMensagem,
-        };
-        supabaseClient
-            .from("mensagens")
-            .insert([
-                //objeto com os mesmos campos do supabase
-                mensagem
-            ])
-            .then(({ data }) => {
-                console.log("Criando Mensagem: ", data)
-            })
-
-
-        setMensagem('');
+        if (novaMensagem != "") {
+            const mensagem = {
+                de: username,
+                texto: novaMensagem,
+            };
+            supabaseClient
+                .from("mensagens")
+                .insert([
+                    //objeto com os mesmos campos do supabase
+                    mensagem
+                ])
+                .then(({ data }) => {
+                    console.log("Criando Mensagem: ", data)
+                })
+            setMensagem('');
+        }else{
+            alert(`${username} enviou uma mensagem vazia, envie uma mensagem valida`)
+        }
     }
 
     return (
@@ -149,8 +151,8 @@ export default function ChatPage() {
                                 // console.log(mensagem)
                             }
                             }
-                            
-                            
+
+
                             //visualizar qual tecla foi utilizada
                             onKeyPress={(event) => {
                                 //visualizar tecla
@@ -173,7 +175,7 @@ export default function ChatPage() {
                                 marginRight: '12px',
                                 color: appConfig.theme.colors.neutrals[200],
                             }}
-                        />
+                        ></TextField>
                         {/* Callback */}
                         <ButtonSendSticker
                             onStickerClick={(sticker) => {
@@ -184,21 +186,17 @@ export default function ChatPage() {
                         <Button
                             onClick={() => handleNovaMensagem(mensagem)}
                             label='Enviar'
-                            disabled = {TextField == ""}
                             fullWidth
                             styleSheet={{
                                 maxWidth: '100px',
-                                marginBottom:'9px'
+                                marginBottom: '9px'
                             }
                             }
                             buttonColors={{
                                 contrastColor: appConfig.theme.colors.neutrals["000"],
                                 mainColor: "#696969",
-
                             }}
-
                         />
-                        
                     </Box>
                 </Box>
             </Box>
